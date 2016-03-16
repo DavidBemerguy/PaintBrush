@@ -16,6 +16,7 @@
 @property(nonatomic, assign) CGFloat blue;
 @property(nonatomic, assign) CGFloat brush;
 @property(nonatomic, assign) BOOL isErasing;
-@property(nonatomic, strong) NSValue *currentPoint;
+@property(nonatomic, strong) NSMutableArray<NSValue *> *touchPoints;
+@property(nonatomic, assign) NSUInteger order;
 
 @end

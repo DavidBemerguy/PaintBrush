@@ -14,7 +14,7 @@
 @property(nonatomic, weak) IBOutlet UIImageView *imageView;
 @property(nonatomic, weak) IBOutlet UISlider *slider;
 
-@property(nonatomic, strong) NSMutableDictionary *touches;
+@property(nonatomic, strong) NSMutableArray<PaintTracker *> *touches;
 
 @property(nonatomic, assign) CGPoint lastTouchPoint;
 @property(nonatomic, assign) NSUInteger touchOrder;
@@ -37,7 +37,7 @@
 
 -(id)initWithCoder:(NSCoder *)aDecoder{
     if(self = [super initWithCoder:aDecoder]){
-        self.touches = [NSMutableDictionary new];
+        self.touches = [NSMutableArray new];
         self.touchOrder = 0;
     }
     
@@ -66,14 +66,15 @@
 
     self.lastTouchPoint = [[touches anyObject] locationInView:self.imageView];
     
-    NSDictionary *dic = @{
-                          @"lastTouchPoint" : [NSValue valueWithCGPoint:self.lastTouchPoint],
-                          @"order"     : @(self.touchOrder++),
-                          };
-    
-    [self.touches setObject:[NSMutableArray new] forKey:dic];
-    
-    self.touchBeganDic = dic;
+    PaintTracker *track = [PaintTracker new];
+    track.red = self.red;
+    track.blue = self.blue;
+    track.green = self.green;
+    [track.touchPoints addObject:[NSValue valueWithCGPoint:self.lastTouchPoint]];
+    track.isErasing = self.isErasing;
+    track.brush = self.brush;
+    track.order = self.touchOrder;
+    [self.touches addObject:track];
 }
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
@@ -83,20 +84,15 @@
     
     NSValue *value = [NSValue valueWithCGPoint:currentPoint];
     
-    PaintTracker *track = [PaintTracker new];
-    track.red = self.red;
-    track.blue = self.blue;
-    track.green = self.green;
-    track.currentPoint = value;
-    track.isErasing = self.isErasing;
-    track.brush = self.brush;
-    
-    NSMutableArray *tracks = self.touches[self.touchBeganDic];
-    if(![tracks containsObject:track]){
-        [tracks addObject:track];
-    }
+    PaintTracker *track = self.touches[self.touchOrder];
+    [track.touchPoints addObject:value];
     
     [self drawInPoint:currentPoint];
+}
+
+-(void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    self.touchOrder++;
 }
 
 -(void)drawInPoint:(CGPoint)currentPoint
@@ -131,26 +127,26 @@
     self.imageView.image = nil;
     
     NSSortDescriptor *descriptor = [NSSortDescriptor sortDescriptorWithKey:@"order" ascending:YES];
-    NSArray *sortedArray = [self.touches.allKeys sortedArrayUsingDescriptors:@[descriptor]];
+    NSArray *sortedArray = [self.touches sortedArrayUsingDescriptors:@[descriptor]];
     
-    for(NSDictionary *dic in sortedArray){
+    for(PaintTracker *track in self.touches){
         
-        self.lastTouchPoint = [dic[@"lastTouchPoint"] CGPointValue];
+        self.lastTouchPoint = [track.touchPoints[0] CGPointValue];
         
-        NSArray *array = self.touches[dic];
-        for(PaintTracker *track in array){
-            self.red = track.red;
-            self.green = track.green;
-            self.blue = track.blue;
-            self.isErasing = track.isErasing;
-            if(self.isErasing){
-                self.brush = track.brush;
-            }else{
-                self.brush = self.slider.value;
-            }
-            
-            [self drawInPoint:track.currentPoint.CGPointValue];
+        self.red = track.red;
+        self.green = track.green;
+        self.blue = track.blue;
+        self.isErasing = track.isErasing;
+        if(self.isErasing){
+            self.brush = track.brush;
+        }else{
+            self.brush = self.slider.value;
         }
+        
+        for(NSValue *value in track.touchPoints){
+            [self drawInPoint:value.CGPointValue];
+        }
+        
         
     }
 }

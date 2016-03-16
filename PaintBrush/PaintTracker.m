@@ -10,6 +10,14 @@
 
 @implementation PaintTracker
 
+-(id)init{
+    if (self = [super init]) {
+        _touchPoints = [NSMutableArray new];
+    }
+    
+    return self;
+}
+
 -(id)copyWithZone:(NSZone *)zone
 {
     PaintTracker *tracker = [[PaintTracker allocWithZone:zone] init];
@@ -17,7 +25,8 @@
     tracker.blue = self.blue;
     tracker.green = self.green;
     tracker.isErasing = self.isErasing;
-    tracker.currentPoint = self.currentPoint;
+    tracker.order = self.order;
+    tracker.touchPoints = [self.touchPoints copy];
     return tracker;
 }
 
