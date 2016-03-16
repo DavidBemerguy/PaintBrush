@@ -10,7 +10,6 @@
 #import "PaintTracker.h"
 
 CGFloat DefaultBrush = 10.0;
-CGFloat DefaultOpacity = 1.0;
 
 @interface PaintBrushViewController ()
 
@@ -22,7 +21,6 @@ CGFloat DefaultOpacity = 1.0;
 @property(nonatomic, assign) CGPoint lastTouchPoint;
 
 @property(nonatomic, strong) UIColor *currentColor;
-@property(nonatomic, assign) CGFloat opacity;
 @property(nonatomic, assign) CGFloat brush;
 @property(nonatomic, assign) BOOL isErasing;
 
@@ -38,7 +36,6 @@ CGFloat DefaultOpacity = 1.0;
         self.touches = [NSMutableArray new];
         self.currentColor = [UIColor blackColor];
         self.brush = DefaultBrush;
-        self.opacity = DefaultOpacity;
         self.isErasing = NO;
     }
     
@@ -102,7 +99,6 @@ CGFloat DefaultOpacity = 1.0;
     
     CGContextStrokePath(UIGraphicsGetCurrentContext());
     self.imageView.image = UIGraphicsGetImageFromCurrentImageContext();
-    [self.imageView setAlpha:self.opacity];
     UIGraphicsEndImageContext();
     
     CGContextRelease(UIGraphicsGetCurrentContext());
