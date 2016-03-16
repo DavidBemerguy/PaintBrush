@@ -39,7 +39,7 @@
 {
     _color = color;
     CGFloat alpha;
-    BOOL canConvert = [_color getRed:&red green:&green blue:&blue alpha:&alpha];
+    [_color getRed:&red green:&green blue:&blue alpha:&alpha];
 }
 
 

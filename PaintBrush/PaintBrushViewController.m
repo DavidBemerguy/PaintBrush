@@ -22,11 +22,15 @@ CGFloat DefaultBrush = 10.0;
 
 @property(nonatomic, strong) UIColor *currentColor;
 @property(nonatomic, assign) CGFloat currentBrush;
+
+/**
+ *  Wether or not the eraser is selected
+ */
 @property(nonatomic, assign) BOOL isErasing;
 
 -(IBAction)erase:(id)sender;
 -(IBAction)slide:(id)sender;
--(IBAction)undo:(id)sender;
+-(IBAction)undo;
 -(IBAction)blue:(id)sender;
 -(IBAction)orange:(id)sender;
 -(IBAction)green:(id)sender;
@@ -60,9 +64,13 @@ CGFloat DefaultBrush = 10.0;
 #pragma mark - Events
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
-
+    
+    // Keeps the last touch point to be used while drawing tracks
     self.lastTouchPoint = [[touches anyObject] locationInView:self.imageView];
     
+    // All touch began creates a new tracker
+    // This tracker will keep all touches until touches ended
+    // All touches inside the tracker should contain the same behaviour (like color, brush and etc.)
     PaintTracker *track = [PaintTracker new];
     track.color = self.currentColor;
     [track.touchPoints addObject:[NSValue valueWithCGPoint:self.lastTouchPoint]];
@@ -73,13 +81,11 @@ CGFloat DefaultBrush = 10.0;
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
     
-    UITouch *touch = [touches anyObject];
-    CGPoint currentPoint = [touch locationInView:self.imageView];
-    
-    NSValue *value = [NSValue valueWithCGPoint:currentPoint];
-    
+    CGPoint currentPoint = [[touches anyObject] locationInView:self.imageView];
+
+    // Gets the current track when touches began and add the new touch point
     PaintTracker *track = self.touches.lastObject;
-    [track.touchPoints addObject:value];
+    [track.touchPoints addObject:[NSValue valueWithCGPoint:currentPoint]];
     
     [self drawInPoint:currentPoint withTracker:track];
 }
@@ -89,24 +95,22 @@ CGFloat DefaultBrush = 10.0;
     UIGraphicsBeginImageContext(self.imageView.frame.size);
     CGContextRef ctx = UIGraphicsGetCurrentContext();
     
-    // Draw
+    // As we create a new context, the image created before is not shown, so we draw the last image in the new context and continue drawing the new points
     [self.imageView.image drawInRect:CGRectMake(0, 0, self.imageView.frame.size.width, self.imageView.frame.size.height)];
+    
     CGContextMoveToPoint(ctx, self.lastTouchPoint.x, self.lastTouchPoint.y);
     CGContextAddLineToPoint(ctx, currentPoint.x, currentPoint.y);
     CGContextSetLineCap(ctx, kCGLineCapRound);
     CGContextSetLineWidth(ctx, tracker.brush);
     CGContextSetRGBStrokeColor(ctx, tracker.red, tracker.green, tracker.blue, 1.0);
 
-    CGBlendMode mode = kCGBlendModeNormal;
-    if(self.isErasing){
-        mode = kCGBlendModeClear;
-    }
-    
-    CGContextSetBlendMode(ctx,mode);
+    // Set eraser
+    CGContextSetBlendMode(ctx, self.isErasing ? kCGBlendModeClear : kCGBlendModeNormal);
     CGContextStrokePath(ctx);
     self.imageView.image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
     
+    // Keeps the current point so we can start drawing from it when touches moved
     self.lastTouchPoint = currentPoint;
 }
 
@@ -116,16 +120,14 @@ CGFloat DefaultBrush = 10.0;
     
     for(PaintTracker *track in self.touches){
         
+        // The first point on the tracker is always the start point we need to draw
         self.lastTouchPoint = [track.touchPoints[0] CGPointValue];
         
         self.currentColor = track.color;
         self.isErasing = track.isErasing;
-        if(self.isErasing){
-            self.currentBrush = track.brush;
-        }else{
-            self.currentBrush = self.slider.value;
-        }
+        self.currentBrush = track.brush;
         
+        // Go tru all touched points of the tracker
         for(NSValue *value in track.touchPoints){
             [self drawInPoint:value.CGPointValue withTracker:track];
         }
@@ -135,11 +137,8 @@ CGFloat DefaultBrush = 10.0;
 }
 
 -(IBAction)slide:(UISlider *)slider
-{    
-    if(fabs(slider.value - self.currentBrush) > (slider.maximumValue - slider.minimumValue) / 10){
-        self.currentBrush = slider.value;
-    }
-
+{
+    self.currentBrush = slider.value;
 }
 
 -(IBAction)erase:(id)sender
@@ -147,13 +146,19 @@ CGFloat DefaultBrush = 10.0;
     self.isErasing = YES;
 }
 
--(IBAction)undo:(id)sender{
-    if(self.touches.count){
-        PaintTracker *lastTracker = self.touches.lastObject;
-        if(lastTracker.touchPoints.lastObject){
-            [lastTracker.touchPoints removeLastObject];
-            [self redrawAllPoints];
+-(IBAction)undo{
+    if(!self.touches.count)
+        return;
+    
+    PaintTracker *lastTracker = self.touches.lastObject;
+    if(lastTracker.touchPoints.lastObject){
+        [lastTracker.touchPoints removeLastObject];
+        
+        if(!lastTracker.touchPoints.count){
+            [self.touches removeObject:lastTracker];
         }
+        
+        [self redrawAllPoints];
     }
 }
 
