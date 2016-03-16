@@ -21,11 +21,17 @@ CGFloat DefaultBrush = 10.0;
 @property(nonatomic, assign) CGPoint lastTouchPoint;
 
 @property(nonatomic, strong) UIColor *currentColor;
-@property(nonatomic, assign) CGFloat brush;
+@property(nonatomic, assign) CGFloat currentBrush;
 @property(nonatomic, assign) BOOL isErasing;
 
 -(IBAction)erase:(id)sender;
 -(IBAction)slide:(id)sender;
+-(IBAction)undo:(id)sender;
+-(IBAction)blue:(id)sender;
+-(IBAction)orange:(id)sender;
+-(IBAction)green:(id)sender;
+-(IBAction)red:(id)sender;
+-(IBAction)yellow:(id)sender;
 
 @end
 
@@ -34,8 +40,8 @@ CGFloat DefaultBrush = 10.0;
 -(id)initWithCoder:(NSCoder *)aDecoder{
     if(self = [super initWithCoder:aDecoder]){
         self.touches = [NSMutableArray new];
-        self.currentColor = [UIColor blackColor];
-        self.brush = DefaultBrush;
+        self.currentColor = [UIColor blueColor];
+        self.currentBrush = DefaultBrush;
         self.isErasing = NO;
     }
     
@@ -61,7 +67,7 @@ CGFloat DefaultBrush = 10.0;
     track.color = self.currentColor;
     [track.touchPoints addObject:[NSValue valueWithCGPoint:self.lastTouchPoint]];
     track.isErasing = self.isErasing;
-    track.brush = self.brush;
+    track.brush = self.currentBrush;
     [self.touches addObject:track];
 }
 
@@ -75,33 +81,31 @@ CGFloat DefaultBrush = 10.0;
     PaintTracker *track = self.touches.lastObject;
     [track.touchPoints addObject:value];
     
-    [self drawInPoint:currentPoint];
+    [self drawInPoint:currentPoint withTracker:track];
 }
 
--(void)drawInPoint:(CGPoint)currentPoint
+-(void)drawInPoint:(CGPoint)currentPoint withTracker:(PaintTracker *)tracker
 {
     UIGraphicsBeginImageContext(self.imageView.frame.size);
+    CGContextRef ctx = UIGraphicsGetCurrentContext();
     
     // Draw
     [self.imageView.image drawInRect:CGRectMake(0, 0, self.imageView.frame.size.width, self.imageView.frame.size.height)];
-    CGContextMoveToPoint(UIGraphicsGetCurrentContext(), self.lastTouchPoint.x, self.lastTouchPoint.y);
-    CGContextAddLineToPoint(UIGraphicsGetCurrentContext(), currentPoint.x, currentPoint.y);
-    CGContextSetLineCap(UIGraphicsGetCurrentContext(), kCGLineCapRound);
-    CGContextSetLineWidth(UIGraphicsGetCurrentContext(), self.brush);
-    CGContextSetRGBStrokeColor(UIGraphicsGetCurrentContext(), 0, 0, 0, 1.0);
+    CGContextMoveToPoint(ctx, self.lastTouchPoint.x, self.lastTouchPoint.y);
+    CGContextAddLineToPoint(ctx, currentPoint.x, currentPoint.y);
+    CGContextSetLineCap(ctx, kCGLineCapRound);
+    CGContextSetLineWidth(ctx, tracker.brush);
+    CGContextSetRGBStrokeColor(ctx, tracker.red, tracker.green, tracker.blue, 1.0);
 
     CGBlendMode mode = kCGBlendModeNormal;
     if(self.isErasing){
         mode = kCGBlendModeClear;
     }
     
-    CGContextSetBlendMode(UIGraphicsGetCurrentContext(),mode);
-    
-    CGContextStrokePath(UIGraphicsGetCurrentContext());
+    CGContextSetBlendMode(ctx,mode);
+    CGContextStrokePath(ctx);
     self.imageView.image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
-    
-    CGContextRelease(UIGraphicsGetCurrentContext());
     
     self.lastTouchPoint = currentPoint;
 }
@@ -117,26 +121,23 @@ CGFloat DefaultBrush = 10.0;
         self.currentColor = track.color;
         self.isErasing = track.isErasing;
         if(self.isErasing){
-            self.brush = track.brush;
+            self.currentBrush = track.brush;
         }else{
-            self.brush = self.slider.value;
+            self.currentBrush = self.slider.value;
         }
         
         for(NSValue *value in track.touchPoints){
-            [self drawInPoint:value.CGPointValue];
+            [self drawInPoint:value.CGPointValue withTracker:track];
         }
         
         
     }
 }
 
--(IBAction)slide:(id)sender
-{
-    UISlider *slider = sender;
-    
-    if(fabs(slider.value - self.brush) > (slider.maximumValue - slider.minimumValue) / 10){
-        self.brush = slider.value;
-        [self redrawAllPoints];
+-(IBAction)slide:(UISlider *)slider
+{    
+    if(fabs(slider.value - self.currentBrush) > (slider.maximumValue - slider.minimumValue) / 10){
+        self.currentBrush = slider.value;
     }
 
 }
@@ -144,6 +145,32 @@ CGFloat DefaultBrush = 10.0;
 -(IBAction)erase:(id)sender
 {
     self.isErasing = YES;
+}
+
+-(IBAction)undo:(id)sender{
+    if(self.touches.count){
+        PaintTracker *lastTracker = self.touches.lastObject;
+        if(lastTracker.touchPoints.lastObject){
+            [lastTracker.touchPoints removeLastObject];
+            [self redrawAllPoints];
+        }
+    }
+}
+
+-(IBAction)blue:(id)sender{
+    self.currentColor = [UIColor blueColor];
+}
+-(IBAction)orange:(id)sender{
+    self.currentColor = [UIColor orangeColor];
+}
+-(IBAction)green:(id)sender{
+    self.currentColor = [UIColor greenColor];
+}
+-(IBAction)red:(id)sender{
+    self.currentColor = [UIColor redColor];
+}
+-(IBAction)yellow:(id)sender{
+    self.currentColor = [UIColor yellowColor];
 }
 
 @end

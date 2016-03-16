@@ -1,5 +1,5 @@
 //
-//  DrawTracker.m
+//  PaintTracker.m
 //  PaintBrush
 //
 //  Created by David Bemerguy on 15/03/2016.
@@ -21,9 +21,6 @@
 -(id)init{
     if (self = [super init]) {
         _touchPoints = [NSMutableArray new];
-        red = 0.0;
-        green = 0.0;
-        blue = 0.0;
     }
     
     return self;
@@ -41,26 +38,10 @@
 -(void)setColor:(UIColor *)color
 {
     _color = color;
-    
-    if(!self.colorComponents){
-        self.colorComponents = CGColorGetComponents(_color.CGColor);
-    }
+    CGFloat alpha;
+    BOOL canConvert = [_color getRed:&red green:&green blue:&blue alpha:&alpha];
 }
 
--(CGFloat)red
-{
-    return self.colorComponents[0];
-}
-
--(CGFloat)green
-{
-    return self.colorComponents[1];
-}
-
--(CGFloat)blue
-{
-    return self.colorComponents[2];
-}
 
 
 @end

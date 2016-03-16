@@ -1,5 +1,5 @@
 //
-//  DrawTracker.h
+//  PaintTracker.h
 //  PaintBrush
 //
 //  Created by David Bemerguy on 15/03/2016.
