@@ -11,12 +11,12 @@
 
 @interface PaintTracker : NSObject <NSCopying>
 
-@property(nonatomic, assign) CGFloat red;
-@property(nonatomic, assign) CGFloat green;
-@property(nonatomic, assign) CGFloat blue;
+@property(nonatomic, readonly) CGFloat red;
+@property(nonatomic, readonly) CGFloat green;
+@property(nonatomic, readonly) CGFloat blue;
 @property(nonatomic, assign) CGFloat brush;
+@property(nonatomic, strong) UIColor *color;
 @property(nonatomic, assign) BOOL isErasing;
 @property(nonatomic, strong) NSMutableArray<NSValue *> *touchPoints;
-@property(nonatomic, assign) NSUInteger order;
 
 @end
